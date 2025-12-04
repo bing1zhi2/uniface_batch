@@ -1,6 +1,6 @@
 # uniface-batch
 
-## test use dcu device,use dtk 2504
+## test use dcu device k100,use dtk 2504
 ## modify code in yolv5 to support batch inference
 
 
@@ -12,6 +12,8 @@
 
 
 ### Install from Source
+
+use docker img: image.sourcefind.cn:5000/dcu/admin/base/migraphx:5.0.0-ubuntu22.04-dtk25.04.1-py3.10
 
 ```bash
 git clone https://github.com/bing1zhi2/uniface_batch
