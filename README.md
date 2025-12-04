@@ -17,7 +17,7 @@ use docker img: image.sourcefind.cn:5000/dcu/admin/base/migraphx:5.0.0-ubuntu22.
 
 ```bash
 git clone https://github.com/bing1zhi2/uniface_batch
-cd uniface
+cd uniface_batch
 pip install -e .
 ```
 
