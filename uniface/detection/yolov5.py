@@ -140,6 +140,47 @@ class YOLOv5Face(BaseDetector):
 
         return img_batch, scale, (pad_w, pad_h)
 
+    def preprocess_one(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
+        """
+        Preprocess image for inference.
+
+        Args:
+            image (np.ndarray): Input image (BGR format)
+
+        Returns:
+            Tuple[np.ndarray, float, Tuple[int, int]]: Preprocessed image, scale ratio, and padding
+        """
+        # Get original image shape
+        img_h, img_w = image.shape[:2]
+
+        # Calculate scale ratio
+        scale = min(self.input_size / img_h, self.input_size / img_w)
+        new_h, new_w = int(img_h * scale), int(img_w * scale)
+
+        # Resize image
+        img_resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+        # Create padded image
+        img_padded = np.full((self.input_size, self.input_size, 3), 114, dtype=np.uint8)
+
+        # Calculate padding
+        pad_h = (self.input_size - new_h) // 2
+        pad_w = (self.input_size - new_w) // 2
+
+        # Place resized image in center
+        img_padded[pad_h : pad_h + new_h, pad_w : pad_w + new_w] = img_resized
+
+        # Convert to RGB and normalize
+        img_rgb = cv2.cvtColor(img_padded, cv2.COLOR_BGR2RGB)
+        img_normalized = img_rgb.astype(np.float32) / 255.0
+
+        # Transpose to CHW format (HWC -> CHW) and add batch dimension
+        img_transposed = np.transpose(img_normalized, (2, 0, 1))
+        # img_batch = np.expand_dims(img_transposed, axis=0)
+        # img_batch = np.ascontiguousarray(img_batch)
+
+        return img_transposed, scale, (pad_w, pad_h)
+
     def inference(self, input_tensor: np.ndarray) -> List[np.ndarray]:
         """Perform model inference on the preprocessed image tensor.
 
@@ -174,6 +215,76 @@ class YOLOv5Face(BaseDetector):
         # 16 = [x, y, w, h, obj_conf, cls_conf, 10 landmarks (5 points * 2 coords)]
 
         predictions = predictions[0]  # Remove batch dimension
+
+        # Filter by confidence
+        mask = predictions[:, 4] >= self.conf_thresh
+        predictions = predictions[mask]
+
+        if len(predictions) == 0:
+            return np.array([]), np.array([])
+
+        # Convert from xywh to xyxy
+        boxes = self._xywh2xyxy(predictions[:, :4])
+
+        # Get confidence scores
+        scores = predictions[:, 4]
+
+        # Get landmarks (5 points, 10 coordinates)
+        landmarks = predictions[:, 5:15].copy()
+
+        # Apply NMS
+        detections_for_nms = np.hstack((boxes, scores[:, None])).astype(np.float32, copy=False)
+        keep = non_max_suppression(detections_for_nms, self.nms_thresh)
+
+        if len(keep) == 0:
+            return np.array([]), np.array([])
+
+        # Filter detections and limit to max_det
+        keep = keep[: self.max_det]
+        boxes = boxes[keep]
+        scores = scores[keep]
+        landmarks = landmarks[keep]
+
+        # Scale back to original image coordinates
+        pad_w, pad_h = padding
+        boxes[:, [0, 2]] = (boxes[:, [0, 2]] - pad_w) / scale
+        boxes[:, [1, 3]] = (boxes[:, [1, 3]] - pad_h) / scale
+
+        # Scale landmarks
+        for i in range(5):
+            landmarks[:, i * 2] = (landmarks[:, i * 2] - pad_w) / scale
+            landmarks[:, i * 2 + 1] = (landmarks[:, i * 2 + 1] - pad_h) / scale
+
+        # Reshape landmarks to (N, 5, 2)
+        landmarks = landmarks.reshape(-1, 5, 2)
+
+        # Combine results
+        detections = np.concatenate([boxes, scores[:, None]], axis=1)
+
+        return detections, landmarks
+    def postprocess_one(
+        self,
+        predictions: np.ndarray,
+        scale: float,
+        padding: Tuple[int, int],
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Postprocess model predictions.
+
+        Args:
+            predictions (np.ndarray): Raw model output
+            scale (float): Scale ratio used in preprocessing
+            padding (Tuple[int, int]): Padding used in preprocessing
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Filtered detections and landmarks
+                - detections: [x1, y1, x2, y2, conf]
+                - landmarks: [5, 2] for each detection
+        """
+        # predictions shape: (25200, 16)
+        # 16 = [x, y, w, h, obj_conf, cls_conf, 10 landmarks (5 points * 2 coords)]
+
+        # predictions = predictions[0]  # Remove batch dimension
 
         # Filter by confidence
         mask = predictions[:, 4] >= self.conf_thresh
@@ -324,3 +435,73 @@ class YOLOv5Face(BaseDetector):
             faces.append(face_dict)
 
         return faces
+
+    def detect_batch(
+        self,
+        images: List[np.ndarray],
+        max_num: int = 0,
+        metric: Literal['default', 'max'] = 'max',
+        center_weight: float = 2.0,
+    ) -> List[Dict[str, Any]]:
+        
+        preprocessed_list = []
+        img_scale_list = []
+        padding_list = []
+        for image in images:
+            original_height, original_width = image.shape[:2]
+            # Preprocess
+            image_preprocessed, scale, padding = self.preprocess_one(image)
+            preprocessed_list.append(image_preprocessed)
+            img_scale_list.append(scale)
+            padding_list.append(padding)
+        
+        img_batch = np.stack(preprocessed_list, axis=0)
+        image_tensor = np.ascontiguousarray(img_batch)
+
+        outputs = self.inference(image_tensor)[0]
+
+        all_img_faces = []
+        for prediction in outputs:
+            # Postprocess
+            detections, landmarks = self.postprocess_one(prediction, scale, padding)
+
+            faces = []
+            # Handle case when no faces are detected
+            if len(detections) >= 0:
+                if 0 < max_num < detections.shape[0]:
+                    # Calculate area of detections
+                    area = (detections[:, 2] - detections[:, 0]) * (detections[:, 3] - detections[:, 1])
+
+                    # Calculate offsets from image center
+                    center = (original_height // 2, original_width // 2)
+                    offsets = np.vstack(
+                        [
+                            (detections[:, 0] + detections[:, 2]) / 2 - center[1],
+                            (detections[:, 1] + detections[:, 3]) / 2 - center[0],
+                        ]
+                    )
+
+                    # Calculate scores based on the chosen metric
+                    offset_dist_squared = np.sum(np.power(offsets, 2.0), axis=0)
+                    if metric == 'max':
+                        values = area
+                    else:
+                        values = area - offset_dist_squared * center_weight
+
+                    # Sort by scores and select top `max_num`
+                    sorted_indices = np.argsort(values)[::-1][:max_num]
+                    detections = detections[sorted_indices]
+                    landmarks = landmarks[sorted_indices]
+
+                
+                for i in range(detections.shape[0]):
+                    face_dict = {
+                        'bbox': detections[i, :4].astype(np.float32),
+                        'confidence': float(detections[i, 4]),
+                        'landmarks': landmarks[i].astype(np.float32),
+                    }
+                    faces.append(face_dict)
+            
+            all_img_faces.append(faces)
+
+        return all_img_faces

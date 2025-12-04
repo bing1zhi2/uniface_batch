@@ -39,6 +39,10 @@ def get_available_providers() -> List[str]:
         providers.append('CUDAExecutionProvider')
         Logger.info('CUDA acceleration enabled (NVIDIA GPU)')
 
+    if 'ROCMExecutionProvider' in available:
+        providers.append('ROCMExecutionProvider')
+        Logger.info('ROCMExecutionProvider acceleration enabled (AMD GPU)')
+
     # CPU is always available as fallback
     providers.append('CPUExecutionProvider')
 
@@ -88,6 +92,7 @@ def create_onnx_session(model_path: str, providers: List[str] = None) -> ort.Inf
             'CoreMLExecutionProvider': 'CoreML (Apple Silicon)',
             'CUDAExecutionProvider': 'CUDA (NVIDIA GPU)',
             'CPUExecutionProvider': 'CPU',
+            'ROCMExecutionProvider': 'AMD GPU',
         }
         provider_display = provider_names.get(active_provider, active_provider)
         Logger.debug(f'Model loaded with provider: {active_provider}')
