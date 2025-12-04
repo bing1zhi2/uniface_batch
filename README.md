@@ -1,77 +1,20 @@
-# UniFace: All-in-One Face Analysis Library
+# uniface-batch
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
-[![PyPI](https://img.shields.io/pypi/v/uniface.svg)](https://pypi.org/project/uniface/)
-[![CI](https://github.com/yakhyo/uniface/actions/workflows/ci.yml/badge.svg)](https://github.com/yakhyo/uniface/actions)
-[![Downloads](https://pepy.tech/badge/uniface)](https://pepy.tech/project/uniface)
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-yakhyo%2Funiface-blue.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==)](https://deepwiki.com/yakhyo/uniface)
+## test use dcu device,use dtk 2504
+## modify code in yolv5 to support batch inference
 
-<div align="center">
-    <img src=".github/logos/logo_web.webp" width=75%>
-</div>
 
+## see [UniFace: All-in-One Face Analysis Library](https://github.com/yakhyo/uniface)
 **UniFace** is a lightweight, production-ready face analysis library built on ONNX Runtime. It provides high-performance face detection, recognition, landmark detection, and attribute analysis with hardware acceleration support across platforms.
 
----
-
-## Features
-
-- **High-Speed Face Detection**: ONNX-optimized RetinaFace and SCRFD models
-- **Facial Landmark Detection**: Accurate 106-point landmark localization
-- **Face Recognition**: ArcFace, MobileFace, and SphereFace embeddings
-- **Attribute Analysis**: Age, gender, and emotion detection
-- **Face Alignment**: Precise alignment for downstream tasks
-- **Hardware Acceleration**: ARM64 optimizations (Apple Silicon), CUDA (NVIDIA), CPU fallback
-- **Simple API**: Intuitive factory functions and clean interfaces
-- **Production-Ready**: Type hints, comprehensive logging, PEP8 compliant
-
----
 
 ## Installation
 
-### Quick Install (All Platforms)
-
-```bash
-pip install uniface
-```
-
-### Platform-Specific Installation
-
-#### macOS (Apple Silicon - M1/M2/M3/M4)
-
-For Apple Silicon Macs, the standard installation automatically includes optimized ARM64 support:
-
-```bash
-pip install uniface
-```
-
-The base `onnxruntime` package (included with uniface) has native Apple Silicon support with ARM64 optimizations built-in since version 1.13+.
-
-#### Linux/Windows with NVIDIA GPU
-
-For CUDA acceleration on NVIDIA GPUs:
-
-```bash
-pip install uniface[gpu]
-```
-
-**Requirements:**
-
-- CUDA 11.x or 12.x
-- cuDNN 8.x
-- See [ONNX Runtime GPU requirements](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html)
-
-#### CPU-Only (All Platforms)
-
-```bash
-pip install uniface
-```
 
 ### Install from Source
 
 ```bash
-git clone https://github.com/yakhyo/uniface.git
+git clone https://github.com/bing1zhi2/uniface_batch
 cd uniface
 pip install -e .
 ```
@@ -79,6 +22,65 @@ pip install -e .
 ---
 
 ## Quick Start
+
+## demo
+
+``` python
+
+import cv2
+from uniface import YOLOv5Face
+from uniface.constants import YOLOv5FaceWeights
+from uniface import ArcFace
+from uniface.constants import ArcFaceWeights
+from uniface import Landmark106
+
+
+
+# Real-time detection (recommended)
+detector = YOLOv5Face(
+    model_name=YOLOv5FaceWeights.YOLOV5S,
+    conf_thresh=0.6,
+    nms_thresh=0.5
+)
+
+# High accuracy (ResNet50 backbone)
+recognizer = ArcFace(model_name=ArcFaceWeights.RESNET)
+
+# landmarker = Landmark106()
+
+
+
+
+# Load image
+# image = cv2.imread("/root/develop/sdkdev/uniface_sdk/uniface/assets/test.jpg")
+image = cv2.imread("/root/develop/sdkdev/uniface_sdk/uniface/assets/test_images/image1.jpg")
+
+
+# faces = detector.detect(image)
+
+# # Process results
+# for face in faces:
+#     bbox = face['bbox']  # [x1, y1, x2, y2]
+#     confidence = face['confidence']
+#     landmarks = face['landmarks']  # 5-point landmarks
+#     print(f"Face detected with confidence: {confidence:.2f}")
+#     # Extract embedding
+#     embedding = recognizer.get_normalized_embedding(image, landmarks)
+#     print(embedding)
+
+all_img_faces = detector.detect_batch([image,image])
+
+# Process results
+for faces in all_img_faces:
+    for face in faces:
+        bbox = face['bbox']  # [x1, y1, x2, y2]
+        confidence = face['confidence']
+        landmarks = face['landmarks']  # 5-point landmarks
+        print(f"Face detected with confidence: {confidence:.2f}")
+        # Extract embedding
+        embedding = recognizer.get_normalized_embedding(image, landmarks)
+        # print(embedding)
+```
 
 ### Face Detection
 
@@ -450,7 +452,7 @@ uniface/
 ---
 
 ## References
-
+- **Uniface** [uniface](https://github.com/yakhyo/uniface)
 - **RetinaFace Training**: [yakhyo/retinaface-pytorch](https://github.com/yakhyo/retinaface-pytorch) - PyTorch implementation and training code
 - **YOLOv5-Face Original**: [deepcam-cn/yolov5-face](https://github.com/deepcam-cn/yolov5-face) - Original PyTorch implementation
 - **YOLOv5-Face ONNX**: [yakhyo/yolov5-face-onnx-inference](https://github.com/yakhyo/yolov5-face-onnx-inference) - ONNX inference implementation
